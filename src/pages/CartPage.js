@@ -2,51 +2,38 @@ import React from 'react';
 import { Card, Button, InputNumber, Typography, Empty, Row, Col, Statistic, Divider, message } from 'antd';
 import { DeleteOutlined, ShoppingOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { removeItem, updateQuantity, incrementQuantity, decrementQuantity } from '../redux/actions/cartActions';
+import { selectCartItems, selectCartTotal, selectCartCount } from '../redux/selectors';
+import { calculateItemSubtotal } from '../helpers/product/quantityHelpers';
+import { validateMinQuantity } from '../helpers/product/quantityHelpers';
 
 const { Title, Text } = Typography;
 
-function CartPage({ cart, setCart }) {
+function CartPage() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const cart = useSelector(selectCartItems);
+  const total = useSelector(selectCartTotal);
+  const totalItems = useSelector(selectCartCount);
 
-  const updateQuantity = (productId, newQuantity) => {
-    if (newQuantity < 1) return;
-
-    const updatedCart = cart.map(item =>
-      item.id === productId ? { ...item, quantity: newQuantity } : item
-    );
-
-    setCart(updatedCart);
+  const handleUpdateQuantity = (productId, newQuantity) => {
+    if (!validateMinQuantity(newQuantity)) return;
+    dispatch(updateQuantity(productId, newQuantity));
     message.success('Quantity updated!');
   };
 
-  const incrementQuantity = (productId) => {
-    const item = cart.find(item => item.id === productId);
-    if (item) {
-      updateQuantity(productId, item.quantity + 1);
-    }
+  const handleIncrementQuantity = (productId) => {
+    dispatch(incrementQuantity(productId));
   };
 
-  const decrementQuantity = (productId) => {
-    const item = cart.find(item => item.id === productId);
-    if (item && item.quantity > 1) {
-      updateQuantity(productId, item.quantity - 1);
-    } else if (item && item.quantity === 1) {
-      removeItem(productId);
-    }
+  const handleDecrementQuantity = (productId) => {
+    dispatch(decrementQuantity(productId));
   };
 
-  const removeItem = (productId) => {
-    const updatedCart = cart.filter(item => item.id !== productId);
-    setCart(updatedCart);
+  const handleRemoveItem = (productId) => {
+    dispatch(removeItem(productId));
     message.success('Item removed from cart!');
-  };
-
-  const calculateTotal = () => {
-    return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
-  };
-
-  const calculateTotalItems = () => {
-    return cart.reduce((total, item) => total + item.quantity, 0);
   };
 
   if (cart.length === 0) {
@@ -79,52 +66,52 @@ function CartPage({ cart, setCart }) {
             <Card key={item.id} style={{ marginBottom: '16px' }}>
               <Row gutter={16} align="middle">
                 <Col xs={24} sm={6}>
-                  <img 
-                    src={item.image} 
+                  <img
+                    src={item.image}
                     alt={item.name}
                     style={{ width: '100%', borderRadius: '8px' }}
                   />
                 </Col>
-                
+
                 <Col xs={24} sm={10}>
                   <Title level={4} style={{ marginBottom: '8px' }}>{item.name}</Title>
                   <Text strong style={{ fontSize: '18px', color: '#e17055' }}>
                     ₹{item.price}
                   </Text>
                 </Col>
-                
+
                 <Col xs={24} sm={8}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <Button 
-                        onClick={() => decrementQuantity(item.id)}
+                      <Button
+                        onClick={() => handleDecrementQuantity(item.id)}
                         icon={item.quantity === 1 ? <DeleteOutlined /> : null}
                         danger={item.quantity === 1}
                       >
                         -1
                       </Button>
-                      <InputNumber 
+                      <InputNumber
                         min={1}
                         value={item.quantity}
-                        onChange={(value) => updateQuantity(item.id, value || 1)}
+                        onChange={(value) => handleUpdateQuantity(item.id, value || 1)}
                         style={{ width: '70px' }}
                       />
-                      <Button onClick={() => incrementQuantity(item.id)}>
+                      <Button onClick={() => handleIncrementQuantity(item.id)}>
                         +1
                       </Button>
                     </div>
-                    
-                    <Button 
-                      danger 
+
+                    <Button
+                      danger
                       icon={<DeleteOutlined />}
-                      onClick={() => removeItem(item.id)}
+                      onClick={() => handleRemoveItem(item.id)}
                       block
                     >
                       Remove
                     </Button>
                     
                     <Text type="secondary">
-                      Subtotal: <Text strong>₹{item.price * item.quantity}</Text>
+                      Subtotal: <Text strong>₹{calculateItemSubtotal(item.price, item.quantity)}</Text>
                     </Text>
                   </div>
                 </Col>
@@ -135,15 +122,15 @@ function CartPage({ cart, setCart }) {
         
         <Col xs={24} lg={8}>
           <Card title="Order Summary" style={{ position: 'sticky', top: '24px' }} styles={{ header: { backgroundColor: '#fff5f5', borderBottom: '2px solid #ff7675' } }}>
-            <Statistic 
-              title="Total Items" 
-              value={calculateTotalItems()} 
+            <Statistic
+              title="Total Items"
+              value={totalItems}
               suffix="items"
             />
             <Divider />
             <Statistic
               title="Total Amount"
-              value={calculateTotal()}
+              value={total}
               prefix="₹"
               valueStyle={{ color: '#55efc4', fontSize: '28px' }}
             />
@@ -152,6 +139,7 @@ function CartPage({ cart, setCart }) {
                 onClick={() => message.info('Checkout completed!')}>
               Proceed to Checkout
             </Button>
+            
           </Card>
         </Col>
       </Row>

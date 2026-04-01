@@ -1,44 +1,53 @@
 import React, { useState } from 'react';
-import { Card, Button, InputNumber, Typography, Divider, Row, Col, message } from 'antd';
+import { useSelector, useDispatch } from 'react-redux';
+import { Card, Button, InputNumber, Typography, Divider, Row, Col, message, Spin, Alert } from 'antd';
 import { PlusOutlined, MinusOutlined } from '@ant-design/icons';
-import { products, categories } from '../data/products';
+import { categories } from '../data/products';
+import { addItem } from '../redux/actions/cartActions.js';
+import { selectProducts, selectProductsLoading, selectProductsError } from '../redux/selectors.js';
+import { validateQuantity, incrementQuantity, decrementQuantity } from '../helpers/product/quantityHelpers';
+import { filterProductsByCategory } from '../helpers/product/filterHelpers';
 
 const { Title, Text } = Typography;
 const { Meta } = Card;
 
-function ProductsPage({ cart, setCart }) {
+function ProductsPage() {
+  const dispatch = useDispatch();
+  const products = useSelector(selectProducts);
+  const loading = useSelector(selectProductsLoading);
+  const error = useSelector(selectProductsError);
+
   const addToCart = (product, quantity) => {
-    if (quantity <= 0) {
+    if (!validateQuantity(quantity)) {
       message.warning('Please select quantity greater than 0');
       return;
     }
 
-    const existingItemIndex = cart.findIndex(item => item.id === product.id);
-
-    let updatedCart;
-    if (existingItemIndex > -1) {
-      updatedCart = cart.map((item, index) =>
-        index === existingItemIndex
-          ? { ...item, quantity: item.quantity + quantity }
-          : item
-      );
-    } else {
-      updatedCart = [
-        ...cart,
-        {
-          id: product.id,
-          name: product.name,
-          price: product.price,
-          image: product.image,
-          quantity: quantity
-        }
-      ];
-    }
-
-    setCart(updatedCart);
-
+    dispatch(addItem(product, quantity));
     message.success(`${product.name} added to cart!`);
   };
+
+  if (loading) {
+    return (
+      <div style={{ textAlign: 'center', padding: '50px' }}>
+        <Spin size="large" />
+        <div style={{ marginTop: '20px' }}>Loading products...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ padding: '50px' }}>
+        <Alert
+          message="Error"
+          description={error}
+          type="error"
+          showIcon
+        />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -51,8 +60,7 @@ function ProductsPage({ cart, setCart }) {
           </Divider>
           
           <Row gutter={[16, 16]}>
-            {products
-              .filter(product => product.category === category)
+            {filterProductsByCategory(products, category)
               .map(product => (
                 <Col xs={24} sm={12} md={8} lg={6} key={product.id}>
                   <ProductCard product={product} addToCart={addToCart} />
@@ -69,13 +77,11 @@ function ProductCard({ product, addToCart }) {
   const [quantity, setQuantity] = useState(1);
 
   const handleIncrement = () => {
-    setQuantity(quantity + 1);
+    setQuantity(incrementQuantity(quantity));
   };
 
   const handleDecrement = () => {
-    if (quantity > 1) {
-      setQuantity(quantity - 1);
-    }
+    setQuantity(decrementQuantity(quantity));
   };
 
   return (
