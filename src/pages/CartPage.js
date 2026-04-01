@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { removeItem, updateQuantity, incrementQuantity, decrementQuantity } from '../redux/actions/cartActions';
 import { selectCartItems, selectCartTotal, selectCartCount } from '../redux/selectors';
+import { calculateItemSubtotal } from '../helpers/product/quantityHelpers';
+import { validateMinQuantity } from '../helpers/product/quantityHelpers';
 
 const { Title, Text } = Typography;
 
@@ -16,7 +18,7 @@ function CartPage() {
   const totalItems = useSelector(selectCartCount);
 
   const handleUpdateQuantity = (productId, newQuantity) => {
-    if (newQuantity < 1) return;
+    if (!validateMinQuantity(newQuantity)) return;
     dispatch(updateQuantity(productId, newQuantity));
     message.success('Quantity updated!');
   };
@@ -109,7 +111,7 @@ function CartPage() {
                     </Button>
                     
                     <Text type="secondary">
-                      Subtotal: <Text strong>₹{item.price * item.quantity}</Text>
+                      Subtotal: <Text strong>₹{calculateItemSubtotal(item.price, item.quantity)}</Text>
                     </Text>
                   </div>
                 </Col>

@@ -5,6 +5,8 @@ import { PlusOutlined, MinusOutlined } from '@ant-design/icons';
 import { categories } from '../data/products';
 import { addItem } from '../redux/actions/cartActions.js';
 import { selectProducts, selectProductsLoading, selectProductsError } from '../redux/selectors.js';
+import { validateQuantity, incrementQuantity, decrementQuantity } from '../helpers/product/quantityHelpers';
+import { filterProductsByCategory } from '../helpers/product/filterHelpers';
 
 const { Title, Text } = Typography;
 const { Meta } = Card;
@@ -16,7 +18,7 @@ function ProductsPage() {
   const error = useSelector(selectProductsError);
 
   const addToCart = (product, quantity) => {
-    if (quantity <= 0) {
+    if (!validateQuantity(quantity)) {
       message.warning('Please select quantity greater than 0');
       return;
     }
@@ -58,8 +60,7 @@ function ProductsPage() {
           </Divider>
           
           <Row gutter={[16, 16]}>
-            {products
-              .filter(product => product.category === category)
+            {filterProductsByCategory(products, category)
               .map(product => (
                 <Col xs={24} sm={12} md={8} lg={6} key={product.id}>
                   <ProductCard product={product} addToCart={addToCart} />
@@ -76,13 +77,11 @@ function ProductCard({ product, addToCart }) {
   const [quantity, setQuantity] = useState(1);
 
   const handleIncrement = () => {
-    setQuantity(quantity + 1);
+    setQuantity(incrementQuantity(quantity));
   };
 
   const handleDecrement = () => {
-    if (quantity > 1) {
-      setQuantity(quantity - 1);
-    }
+    setQuantity(decrementQuantity(quantity));
   };
 
   return (
