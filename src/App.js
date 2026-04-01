@@ -1,17 +1,26 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import {Provider, useSelector, useDispatch} from 'react-redux';
 import { Layout, Menu, Badge } from 'antd';
 import { ShoppingCartOutlined, AppstoreOutlined } from '@ant-design/icons';
 import 'antd/dist/reset.css';
 import './App.css';
 import ProductsPage from './pages/ProductsPage';
+import store from './redux/store';
+import {selectCartCount} from './redux/selectors.js';
+import {fetchProducts} from './redux/actions/productActions.js';
 import CartPage from './pages/CartPage';
 
 const { Header, Content } = Layout;
 
-function App() {
-  const [cart, setCart] = React.useState([]);
-  const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+function AppContent() {
+  const dispatch = useDispatch();
+  const cartCount = useSelector(selectCartCount);
+  const cart = useSelector(state => state.cart.items);
+
+  useEffect(() => {
+    dispatch(fetchProducts());
+  }, [dispatch]);
 
   return (
     <Router>
@@ -37,12 +46,23 @@ function App() {
         </Header>
         <Content style={{ padding: '50px' }}>
           <Routes>
-            <Route path="/" element={<ProductsPage cart={cart} setCart={setCart} />} />
-            <Route path="/cart" element={<CartPage cart={cart} setCart={setCart} />} />
+            <Route path="/" element={<ProductsPage/>} />
+            <Route path="/cart" element={<CartPage/>} />
           </Routes>
         </Content>
       </Layout>
     </Router>
+  );
+}
+
+function App() {
+  const [cart, setCart] = React.useState([]);
+  const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+  return (
+    <Provider store = {store}>
+      <AppContent />
+    </Provider>
   );
 }
 

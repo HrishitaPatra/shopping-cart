@@ -47,7 +47,6 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
-/* Coral Pink Theme Overrides */
 .ant-btn-primary {
   background-color: #ff7675 !important;
   border-color: #ff7675 !important;
